@@ -3,6 +3,8 @@
 #include "raylib.h"
 #include "raymath.h"
 
+#define RESOURCES_DIR "resources/"
+
 #define max(a, b) (a) > (b) ? (a) : (b)
 #define min(a, b) (a) < (b) ? (a) : (b)
 
@@ -188,8 +190,6 @@ int main(void)
 
     SetTargetFPS(60);
 
-    RenderTexture2D target;
-
     setup();
 
     float lastHeight = 0;
@@ -198,6 +198,10 @@ int main(void)
     Vector2 next_direction_input = Vector2Zero();
 
     bool debug = true;
+
+    RenderTexture2D target;
+
+    Texture2D background = LoadTexture(RESOURCES_DIR "bg.jpg");
 
     while (!WindowShouldClose())
     {
@@ -320,12 +324,17 @@ int main(void)
 
         ClearBackground(RAYWHITE);
 
+        Rectangle source_rec = {0.0f, 0.0f, (float)background.width, (float)background.height};
+        Rectangle dest_rec = {0.0f, 0.0f, width, height};
+
+        DrawTexturePro(background, source_rec, dest_rec, Vector2Zero(), 0, WHITE);
+
         uint8_t diameter = calculate_diameter();
         float used_x = diameter * COLUMNS;
         float used_y = diameter * ROWS;
         Vector2 offset = {
-            .x = (GetScreenWidth() - used_x) / 2,
-            .y = (GetScreenHeight() - used_y) / 2,
+            .x = (width - used_x) / 2,
+            .y = (height - used_y) / 2,
         };
 
         if (debug)
