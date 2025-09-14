@@ -128,6 +128,11 @@ static bool is_location_inside_snake(const Vector2 location, const Snake *snake)
     return false;
 }
 
+static bool can_spawn_more_food(const Snake *snake)
+{
+    return snake->body.count != COLUMNS * ROWS;
+}
+
 static Vector2 random_food_position(const Snake *snake)
 {
     Vector2 return_ = {.x = 0, .y = 0};
@@ -260,8 +265,19 @@ int main(void)
                 {
                     nob_da_append(&snake.body, snake.body.items[until]);
 
-                    food.position = random_food_position(&snake);
                     foods_eaten++;
+
+                    if (can_spawn_more_food(&snake))
+                    {
+                        food.position = random_food_position(&snake);
+                    }
+                    else
+                    {
+                        // Not lost, but yeah, I just dont want it crashing
+                        state = Lost;
+                        setup();
+                        goto draw;
+                    }
                 }
 
                 for (size_t i = until; i > 0; i--)
