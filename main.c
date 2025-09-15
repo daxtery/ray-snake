@@ -27,8 +27,44 @@ typedef struct
     Vector2 direction;
 } Snake;
 
+typedef struct
+{
+    uint16_t ms_to_trigger;
+    uint16_t ms_accumulated;
+} Accumulator;
+
 #define ROWS 15
 #define COLUMNS 25
+
+static bool accumulator_tick(Accumulator *accumulator, float dt)
+{
+    float add = dt * 1000.0;
+
+    if (accumulator->ms_accumulated + add > accumulator->ms_to_trigger)
+    {
+        accumulator->ms_accumulated = 0;
+        return true;
+    }
+
+    accumulator->ms_accumulated += add;
+    return false;
+}
+
+static void accumulator_reset(Accumulator *accumulator)
+{
+    accumulator->ms_accumulated = 0;
+}
+
+static float accumulator_progress(const Accumulator accumulator)
+{
+    return min((float)accumulator.ms_accumulated / (float)accumulator.ms_to_trigger, 1.0f);
+}
+
+static float linear_interpolation(float progress, float from, float to)
+{
+    float diff = to - from;
+    return from + (progress * diff);
+}
 
 static uint8_t calculate_diameter(void)
 {
@@ -41,11 +77,17 @@ static uint8_t calculate_diameter(void)
     return min(width_diameter, height_diameter);
 }
 
-static void draw_food(const Food *food, uint8_t diameter, Vector2 offset)
+static void draw_food(const Food *food, Accumulator *animation_accumulator, const Texture2D *texture, uint8_t diameter,
+                      Vector2 offset, float dt)
 {
     Vector2 top_left_corner = Vector2Add(Vector2Scale(food->position, diameter), offset);
-    Vector2 middle = {.x = top_left_corner.x + diameter / 2, .y = top_left_corner.y + diameter / 2};
-    DrawCircleV(middle, diameter / 2, food->color);
+    Rectangle source_rec = {0.0f, 0.0f, (float)texture->width, (float)texture->height};
+    Rectangle dest_rec = {top_left_corner.x, top_left_corner.y, diameter, diameter};
+    accumulator_tick(animation_accumulator, dt);
+    float scale = linear_interpolation(accumulator_progress(*animation_accumulator), 1.0f, 1.10f);
+    dest_rec.height *= scale;
+    dest_rec.width *= scale;
+    DrawTexturePro(*texture, source_rec, dest_rec, Vector2Zero(), 0.0f, WHITE);
 }
 
 static void draw_body(const Body *body, uint8_t diameter, Vector2 offset)
@@ -86,30 +128,6 @@ static const Vector2 DIRECTION_RIGHT = (Vector2){1, 0};
 static bool is_opposite_direction(const Vector2 dir1, const Vector2 dir2)
 {
     return (dir1.x == -dir2.x && dir1.y == dir2.y) || (dir1.x == dir2.x && dir1.y == -dir2.y);
-}
-
-typedef struct
-{
-    uint16_t ms_to_trigger;
-    uint16_t ms_accumulated;
-} Accumulator;
-
-static bool accumulator_tick(Accumulator *accumulator, float dt)
-{
-    accumulator->ms_accumulated += dt * 1000.0;
-
-    if (accumulator->ms_accumulated > accumulator->ms_to_trigger)
-    {
-        accumulator->ms_accumulated = 0;
-        return true;
-    }
-
-    return false;
-}
-
-static void accumulator_reset(Accumulator *accumulator)
-{
-    accumulator->ms_accumulated = 0;
 }
 
 static bool is_food_there(const Vector2 position, const Food *food)
@@ -159,13 +177,20 @@ static Accumulator move_timing = {
     .ms_to_trigger = 200,
 };
 
+static Accumulator food_animation_timing = {
+    .ms_accumulated = 0,
+    .ms_to_trigger = 500,
+};
+
+static Vector2 next_direction_input = {0};
+
 static void setup(void)
 {
     snake = (Snake){0};
     nob_da_append(&snake.body, ((Vector2){10, 2}));
     nob_da_append(&snake.body, ((Vector2){10, 3}));
     nob_da_append(&snake.body, ((Vector2){10, 4}));
-    snake.direction = Vector2Zero();
+    snake.direction = DIRECTION_UP;
 
     food = (Food){
         .position = (Vector2){1, 3},
@@ -173,6 +198,7 @@ static void setup(void)
     };
 
     accumulator_reset(&move_timing);
+    next_direction_input = Vector2Zero();
 }
 
 typedef enum
@@ -195,13 +221,11 @@ int main(void)
     float lastHeight = 0;
     float lastWidth = 0;
 
-    Vector2 next_direction_input = Vector2Zero();
-
-    bool debug = true;
-
     RenderTexture2D target;
 
     Texture2D background = LoadTexture(RESOURCES_DIR "bg.jpg");
+
+    Texture2D apple_texture = LoadTexture(RESOURCES_DIR "apple.png");
 
     while (!WindowShouldClose())
     {
@@ -232,17 +256,12 @@ int main(void)
             next_direction_input = DIRECTION_DOWN;
         }
 
-        else if (IsKeyPressed(KEY_L))
-        {
-            debug = !debug;
-        }
-
         if (state == Idle || state == Lost)
         {
-            snake.direction = next_direction_input;
-
-            if (snake.direction.x != 0 || snake.direction.y != 0)
+            if ((next_direction_input.x != 0 || next_direction_input.y != 0) &&
+                (!is_opposite_direction(next_direction_input, snake.direction)))
             {
+                snake.direction = next_direction_input;
                 foods_eaten = 0;
                 state = Playing;
             }
@@ -337,36 +356,11 @@ int main(void)
             .y = (height - used_y) / 2,
         };
 
-        if (debug)
-        {
-            for (size_t x = 0; x < COLUMNS; ++x)
-            {
-                for (size_t y = 0; y < ROWS; ++y)
-                {
-                    const char *text = nob_temp_sprintf("%2ld:%2ld", x, y);
-                    const size_t font_size = 10;
-                    Vector2 text_size = MeasureTextEx(GetFontDefault(), text, font_size, 0);
-                    Vector2 where = Vector2Add(Vector2Scale(
-                                                   (Vector2){
-                                                       .x = x,
-                                                       .y = y,
-                                                   },
-                                                   diameter),
-                                               offset);
-                    DrawRectangle(where.x, where.y, diameter, diameter, GRAY);
-                    DrawText(text,
-                             where.x + text_size.x / 2,            //
-                             where.y + text_size.y / 2, font_size, //
-                             DARKGRAY);
-                }
-            }
-        }
-
         draw_borders(offset);
 
         draw_body(&snake.body, diameter, offset);
 
-        draw_food(&food, diameter, offset);
+        draw_food(&food, &food_animation_timing, &apple_texture, diameter, offset, GetFrameTime());
 
         draw_score(foods_eaten);
 
