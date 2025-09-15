@@ -258,7 +258,7 @@ int main(void)
                     snake.direction = next_direction_input;
                 }
 
-                move_timing.ms_to_trigger = max(200 - (5 * (snake.body.count - 2)), 100);
+                move_timing.ms_to_trigger = max(200 - (5 * ((int)snake.body.count - 2)), 100);
 
                 Vector2 next_head_position = snake.body.items[0];
                 next_head_position = Vector2Add(next_head_position, snake.direction);
