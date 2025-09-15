@@ -90,14 +90,78 @@ static void draw_food(const Food *food, Accumulator *animation_accumulator, cons
     DrawTexturePro(*texture, source_rec, dest_rec, Vector2Zero(), 0.0f, WHITE);
 }
 
-static void draw_body(const Body *body, uint8_t diameter, Vector2 offset)
+static Rectangle snake_head_up = {
+    .x = 64 * 3,
+    .y = 64 * 0,
+    .height = 64,
+    .width = 64,
+};
+
+static Rectangle snake_head_down = {
+    .x = 64 * 4,
+    .y = 64 * 1,
+    .height = 64,
+    .width = 64,
+};
+
+static Rectangle snake_head_left = {
+    .x = 64 * 3,
+    .y = 64 * 1,
+    .height = 64,
+    .width = 64,
+};
+
+static Rectangle snake_head_right = {
+    .x = 64 * 4,
+    .y = 64 * 0,
+    .height = 64,
+    .width = 64,
+};
+
+static const Vector2 DIRECTION_UP = (Vector2){0, -1};
+static const Vector2 DIRECTION_DOWN = (Vector2){0, 1};
+static const Vector2 DIRECTION_LEFT = (Vector2){-1, 0};
+static const Vector2 DIRECTION_RIGHT = (Vector2){1, 0};
+
+static Rectangle rectangle_for_snake_head_direction(const Snake *snake)
 {
-    nob_da_foreach(Vector2, segment, body)
+    if (Vector2Equals(snake->direction, DIRECTION_UP))
+    {
+        return snake_head_up;
+    }
+    if (Vector2Equals(snake->direction, DIRECTION_DOWN))
+    {
+        return snake_head_down;
+    }
+    if (Vector2Equals(snake->direction, DIRECTION_LEFT))
+    {
+        return snake_head_left;
+    }
+    if (Vector2Equals(snake->direction, DIRECTION_RIGHT))
+    {
+        return snake_head_right;
+    }
+
+    NOB_UNREACHABLE("rectangle_for_snake_head_direction");
+}
+
+static void draw_snake(const Snake *snake, const Texture2D *snake_atlas, uint8_t diameter, Vector2 offset)
+{
+    nob_da_foreach(Vector2, segment, &snake->body)
     {
         Vector2 top_left_corner = Vector2Add(Vector2Scale(*segment, diameter), offset);
-        Vector2 middle = {.x = top_left_corner.x + diameter / 2, .y = top_left_corner.y + diameter / 2};
-        Color color = &body->items[0] == segment ? GREEN : MAGENTA;
-        DrawCircleV(middle, diameter / 2, color);
+
+        if (segment == &snake->body.items[0])
+        {
+            Rectangle source_rec = rectangle_for_snake_head_direction(snake);
+            Rectangle dest_rec = {top_left_corner.x, top_left_corner.y, diameter, diameter};
+            DrawTexturePro(*snake_atlas, source_rec, dest_rec, Vector2Zero(), 0.0f, WHITE);
+        }
+        else
+        {
+            Vector2 middle = {.x = top_left_corner.x + diameter / 2, .y = top_left_corner.y + diameter / 2};
+            DrawCircleV(middle, diameter / 2, MAGENTA);
+        }
     }
 }
 
@@ -119,11 +183,6 @@ static void draw_score(size_t score)
              text_size.y / 2, font_size, //
              DARKGRAY);
 }
-
-static const Vector2 DIRECTION_UP = (Vector2){0, -1};
-static const Vector2 DIRECTION_DOWN = (Vector2){0, 1};
-static const Vector2 DIRECTION_LEFT = (Vector2){-1, 0};
-static const Vector2 DIRECTION_RIGHT = (Vector2){1, 0};
 
 static bool is_opposite_direction(const Vector2 dir1, const Vector2 dir2)
 {
@@ -226,6 +285,8 @@ int main(void)
     Texture2D background = LoadTexture(RESOURCES_DIR "bg.jpg");
 
     Texture2D apple_texture = LoadTexture(RESOURCES_DIR "apple.png");
+
+    Texture2D snake_atlas = LoadTexture(RESOURCES_DIR "snake-graphics.png");
 
     while (!WindowShouldClose())
     {
@@ -358,7 +419,7 @@ int main(void)
 
         draw_borders(offset);
 
-        draw_body(&snake.body, diameter, offset);
+        draw_snake(&snake.body, &snake_atlas, diameter, offset);
 
         draw_food(&food, &food_animation_timing, &apple_texture, diameter, offset, GetFrameTime());
 
