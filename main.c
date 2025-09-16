@@ -90,32 +90,106 @@ static void draw_food(const Food *food, Accumulator *animation_accumulator, cons
     DrawTexturePro(*texture, source_rec, dest_rec, Vector2Zero(), 0.0f, WHITE);
 }
 
+// changes to avoid bleeding
+//  + 0.5f
+// - 1.0f
+
 static Rectangle snake_head_up = {
-    .x = 64 * 3,
-    .y = 64 * 0,
-    .height = 64,
-    .width = 64,
+    .x = 64 * 3 + 0.5f,
+    .y = 64 * 0 + 0.5f,
+    .height = 64 - 1.0f,
+    .width = 64 - 1.0f,
 };
 
 static Rectangle snake_head_down = {
-    .x = 64 * 4,
-    .y = 64 * 1,
-    .height = 64,
-    .width = 64,
+    .x = 64 * 4 + 0.5f,
+    .y = 64 * 1 + 0.5f,
+    .height = 64 - 1.0f,
+    .width = 64 - 1.0f,
 };
 
 static Rectangle snake_head_left = {
-    .x = 64 * 3,
-    .y = 64 * 1,
-    .height = 64,
-    .width = 64,
+    .x = 64 * 3 + 0.5f,
+    .y = 64 * 1 + 0.5f,
+    .height = 64 - 1.0f,
+    .width = 64 - 1.0f,
 };
 
 static Rectangle snake_head_right = {
-    .x = 64 * 4,
-    .y = 64 * 0,
-    .height = 64,
-    .width = 64,
+    .x = 64 * 4 + 0.5f,
+    .y = 64 * 0 + 0.5f,
+    .height = 64 - 1.0f,
+    .width = 64 - 1.0f,
+};
+
+static Rectangle snake_tail_down = {
+    .x = 64 * 4 + 0.5f,
+    .y = 64 * 3 + 0.5f,
+    .height = 64 - 1.0f,
+    .width = 64 - 1.0f,
+};
+
+static Rectangle snake_tail_up = {
+    .x = 64 * 3 + 0.5f,
+    .y = 64 * 2 + 0.5f,
+    .height = 64 - 1.0f,
+    .width = 64 - 1.0f,
+};
+
+static Rectangle snake_tail_right = {
+    .x = 64 * 4 + 0.5f,
+    .y = 64 * 2 + 0.5f,
+    .height = 64 - 1.0f,
+    .width = 64 - 1.0f,
+};
+
+static Rectangle snake_tail_left = {
+    .x = 64 * 3 + 0.5f,
+    .y = 64 * 3 + 0.5f,
+    .height = 64 - 1.0f,
+    .width = 64 - 1.0f,
+};
+
+static Rectangle snake_body_45 = {
+    .x = 64 * 2 + 0.5f,
+    .y = 64 * 2 + 0.5f,
+    .height = 64 - 1.0f,
+    .width = 64 - 1.0f,
+};
+
+static Rectangle snake_body_90 = {
+    .x = 64 * 2 + 0.5f,
+    .y = 64 * 1 + 0.5f,
+    .height = 64 - 1.0f,
+    .width = 64 - 1.0f,
+};
+
+static Rectangle snake_body_135 = {
+    .x = 64 * 2 + 0.5f,
+    .y = 64 * 0 + 0.5f,
+    .height = 64 - 1.0f,
+    .width = 64 - 1.0f,
+};
+
+static Rectangle snake_body_180 = {
+    .x = 64 * 1 + 0.5f,
+    .y = 64 * 0 + 0.5f,
+    .height = 64 - 1.0f,
+    .width = 64 - 1.0f,
+};
+
+static Rectangle snake_body_225 = {
+    .x = 64 * 0 + 0.5f,
+    .y = 64 * 0 + 0.5f,
+    .height = 64 - 1.0f,
+    .width = 64 - 1.0f,
+};
+
+static Rectangle snake_body_315 = {
+    .x = 64 * 0 + 0.5f,
+    .y = 64 * 1 + 0.5f,
+    .height = 64 - 1.0f,
+    .width = 64 - 1.0f,
 };
 
 static const Vector2 DIRECTION_UP = (Vector2){0, -1};
@@ -123,26 +197,95 @@ static const Vector2 DIRECTION_DOWN = (Vector2){0, 1};
 static const Vector2 DIRECTION_LEFT = (Vector2){-1, 0};
 static const Vector2 DIRECTION_RIGHT = (Vector2){1, 0};
 
-static Rectangle rectangle_for_snake_head_direction(const Snake *snake)
+static Rectangle rectangle_for_snake_body_part(const Snake *snake, const Vector2 *segment)
 {
-    if (Vector2Equals(snake->direction, DIRECTION_UP))
+#define IS_TAIL(part) part == &snake->body.items[snake->body.count - 1]
+#define IS_HEAD(part) part == &snake->body.items[0]
+
+    if (IS_HEAD(segment))
     {
-        return snake_head_up;
-    }
-    if (Vector2Equals(snake->direction, DIRECTION_DOWN))
-    {
-        return snake_head_down;
-    }
-    if (Vector2Equals(snake->direction, DIRECTION_LEFT))
-    {
-        return snake_head_left;
-    }
-    if (Vector2Equals(snake->direction, DIRECTION_RIGHT))
-    {
-        return snake_head_right;
+        if (Vector2Equals(snake->direction, DIRECTION_UP))
+        {
+            return snake_head_up;
+        }
+        if (Vector2Equals(snake->direction, DIRECTION_DOWN))
+        {
+            return snake_head_down;
+        }
+        if (Vector2Equals(snake->direction, DIRECTION_LEFT))
+        {
+            return snake_head_left;
+        }
+        if (Vector2Equals(snake->direction, DIRECTION_RIGHT))
+        {
+            return snake_head_right;
+        }
     }
 
-    NOB_UNREACHABLE("rectangle_for_snake_head_direction");
+    if (IS_TAIL(segment))
+    {
+        const Vector2 *previous = segment - 1;
+        const Vector2 *tail = segment;
+
+        Vector2 diff = Vector2Subtract(*tail, *previous);
+
+        if (Vector2Equals(diff, DIRECTION_UP))
+        {
+            return snake_tail_down;
+        }
+        if (Vector2Equals(diff, DIRECTION_DOWN))
+        {
+            return snake_tail_up;
+        }
+        if (Vector2Equals(diff, DIRECTION_LEFT))
+        {
+            return snake_tail_right;
+        }
+        return snake_tail_left;
+    }
+
+    const Vector2 *towards_head = segment - 1;
+    const Vector2 *towards_tail = segment + 1;
+
+    if (segment->x == towards_head->x && segment->x == towards_tail->x)
+    {
+        return snake_body_90;
+    }
+
+    if (segment->y == towards_head->y && segment->y == towards_tail->y)
+    {
+        return snake_body_180;
+    }
+
+    Vector2 head_diff = Vector2Subtract(*segment, *towards_head);
+    Vector2 tail_diff = Vector2Subtract(*towards_tail, *segment);
+
+#define head_to_tail(direction1, direction2)                                                                           \
+    (Vector2Equals(head_diff, direction1) && Vector2Equals(tail_diff, direction2))
+
+    if (head_to_tail(DIRECTION_RIGHT, DIRECTION_UP) || head_to_tail(DIRECTION_DOWN, DIRECTION_LEFT))
+    {
+        return snake_body_45;
+    }
+
+    if (head_to_tail(DIRECTION_RIGHT, DIRECTION_DOWN) || head_to_tail(DIRECTION_UP, DIRECTION_LEFT))
+    {
+        return snake_body_135;
+    }
+
+    if (head_to_tail(DIRECTION_DOWN, DIRECTION_RIGHT) || head_to_tail(DIRECTION_LEFT, DIRECTION_UP))
+    {
+        return snake_body_315;
+    }
+
+    if (head_to_tail(DIRECTION_UP, DIRECTION_RIGHT) || head_to_tail(DIRECTION_LEFT, DIRECTION_DOWN))
+    {
+        return snake_body_225;
+    }
+
+    NOB_UNREACHABLE("rectangle_for_snake_body_part");
+
+#undef IS_TAIL
 }
 
 static void draw_snake(const Snake *snake, const Texture2D *snake_atlas, uint8_t diameter, Vector2 offset)
@@ -150,18 +293,9 @@ static void draw_snake(const Snake *snake, const Texture2D *snake_atlas, uint8_t
     nob_da_foreach(Vector2, segment, &snake->body)
     {
         Vector2 top_left_corner = Vector2Add(Vector2Scale(*segment, diameter), offset);
-
-        if (segment == &snake->body.items[0])
-        {
-            Rectangle source_rec = rectangle_for_snake_head_direction(snake);
-            Rectangle dest_rec = {top_left_corner.x, top_left_corner.y, diameter, diameter};
-            DrawTexturePro(*snake_atlas, source_rec, dest_rec, Vector2Zero(), 0.0f, WHITE);
-        }
-        else
-        {
-            Vector2 middle = {.x = top_left_corner.x + diameter / 2, .y = top_left_corner.y + diameter / 2};
-            DrawCircleV(middle, diameter / 2, MAGENTA);
-        }
+        Rectangle dest_rec = {top_left_corner.x, top_left_corner.y, diameter, diameter};
+        Rectangle source_rec = rectangle_for_snake_body_part(snake, segment);
+        DrawTexturePro(*snake_atlas, source_rec, dest_rec, Vector2Zero(), 0.0f, ORANGE);
     }
 }
 
@@ -181,7 +315,7 @@ static void draw_score(size_t score)
     DrawText(text,
              text_size.x / 2,            //
              text_size.y / 2, font_size, //
-             DARKGRAY);
+             YELLOW);
 }
 
 static bool is_opposite_direction(const Vector2 dir1, const Vector2 dir2)
@@ -419,7 +553,7 @@ int main(void)
 
         draw_borders(offset);
 
-        draw_snake(&snake.body, &snake_atlas, diameter, offset);
+        draw_snake(&snake, &snake_atlas, diameter, offset);
 
         draw_food(&food, &food_animation_timing, &apple_texture, diameter, offset, GetFrameTime());
 
@@ -442,7 +576,7 @@ int main(void)
             DrawText(text,
                      GetScreenWidth() / 2 - text_size.x / 2,             //
                      GetScreenHeight() / 2 - text_size.y / 2, font_size, //
-                     DARKGRAY);
+                     YELLOW);
         }
 
         else if (state == Lost)
@@ -457,7 +591,7 @@ int main(void)
             DrawText(text,
                      GetScreenWidth() / 2 - text_size.x / 2,             //
                      GetScreenHeight() / 2 - text_size.y / 2, font_size, //
-                     DARKGRAY);
+                     YELLOW);
         }
 
         EndDrawing();
