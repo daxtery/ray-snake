@@ -90,106 +90,113 @@ static void draw_food(const Food *food, Accumulator *animation_accumulator, cons
     DrawTexturePro(*texture, source_rec, dest_rec, Vector2Zero(), 0.0f, WHITE);
 }
 
-// changes to avoid bleeding
-//  + 0.5f
-// - 1.0f
+typedef struct
+{
+    u_int8_t x;
+    u_int8_t y;
+} AtlasPiece;
 
-static Rectangle snake_head_up = {
-    .x = 64 * 3 + 0.5f,
-    .y = 64 * 0 + 0.5f,
-    .height = 64 - 1.0f,
-    .width = 64 - 1.0f,
+typedef struct
+{
+    u_int8_t width;
+    u_int8_t height;
+    AtlasPiece pieces[];
+} Atlas;
+
+enum
+{
+    SNAKE_HEAD_UP,
+    SNAKE_HEAD_DOWN,
+    SNAKE_HEAD_LEFT,
+    SNAKE_HEAD_RIGHT,
+    SNAKE_TAIL_DOWN,
+    SNAKE_TAIL_UP,
+    SNAKE_TAIL_RIGHT,
+    SNAKE_TAIL_LEFT,
+    SNAKE_BODY_45,
+    SNAKE_BODY_90,
+    SNAKE_BODY_135,
+    SNAKE_BODY_180,
+    SNAKE_BODY_225,
+    SNAKE_BODY_315,
 };
 
-static Rectangle snake_head_down = {
-    .x = 64 * 4 + 0.5f,
-    .y = 64 * 1 + 0.5f,
-    .height = 64 - 1.0f,
-    .width = 64 - 1.0f,
-};
-
-static Rectangle snake_head_left = {
-    .x = 64 * 3 + 0.5f,
-    .y = 64 * 1 + 0.5f,
-    .height = 64 - 1.0f,
-    .width = 64 - 1.0f,
-};
-
-static Rectangle snake_head_right = {
-    .x = 64 * 4 + 0.5f,
-    .y = 64 * 0 + 0.5f,
-    .height = 64 - 1.0f,
-    .width = 64 - 1.0f,
-};
-
-static Rectangle snake_tail_down = {
-    .x = 64 * 4 + 0.5f,
-    .y = 64 * 3 + 0.5f,
-    .height = 64 - 1.0f,
-    .width = 64 - 1.0f,
-};
-
-static Rectangle snake_tail_up = {
-    .x = 64 * 3 + 0.5f,
-    .y = 64 * 2 + 0.5f,
-    .height = 64 - 1.0f,
-    .width = 64 - 1.0f,
-};
-
-static Rectangle snake_tail_right = {
-    .x = 64 * 4 + 0.5f,
-    .y = 64 * 2 + 0.5f,
-    .height = 64 - 1.0f,
-    .width = 64 - 1.0f,
-};
-
-static Rectangle snake_tail_left = {
-    .x = 64 * 3 + 0.5f,
-    .y = 64 * 3 + 0.5f,
-    .height = 64 - 1.0f,
-    .width = 64 - 1.0f,
-};
-
-static Rectangle snake_body_45 = {
-    .x = 64 * 2 + 0.5f,
-    .y = 64 * 2 + 0.5f,
-    .height = 64 - 1.0f,
-    .width = 64 - 1.0f,
-};
-
-static Rectangle snake_body_90 = {
-    .x = 64 * 2 + 0.5f,
-    .y = 64 * 1 + 0.5f,
-    .height = 64 - 1.0f,
-    .width = 64 - 1.0f,
-};
-
-static Rectangle snake_body_135 = {
-    .x = 64 * 2 + 0.5f,
-    .y = 64 * 0 + 0.5f,
-    .height = 64 - 1.0f,
-    .width = 64 - 1.0f,
-};
-
-static Rectangle snake_body_180 = {
-    .x = 64 * 1 + 0.5f,
-    .y = 64 * 0 + 0.5f,
-    .height = 64 - 1.0f,
-    .width = 64 - 1.0f,
-};
-
-static Rectangle snake_body_225 = {
-    .x = 64 * 0 + 0.5f,
-    .y = 64 * 0 + 0.5f,
-    .height = 64 - 1.0f,
-    .width = 64 - 1.0f,
-};
-
-static Rectangle snake_body_315 = {
-    .x = 64 * 0 + 0.5f,
-    .y = 64 * 1 + 0.5f,
-    .height = 64 - 1.0f,
-    .width = 64 - 1.0f,
+static Atlas snake_atlas = {
+    .height = 64,
+    .width = 64,
+    .pieces =
+        {
+            [SNAKE_HEAD_UP] =
+                {
+                    .x = 3,
+                    .y = 0,
+                },
+            [SNAKE_HEAD_DOWN] =
+                {
+                    .x = 4,
+                    .y = 1,
+                },
+            [SNAKE_HEAD_LEFT] =
+                {
+                    .x = 3,
+                    .y = 1,
+                },
+            [SNAKE_HEAD_RIGHT] =
+                {
+                    .x = 4,
+                    .y = 0,
+                },
+            [SNAKE_TAIL_DOWN] =
+                {
+                    .x = 4,
+                    .y = 3,
+                },
+            [SNAKE_TAIL_UP] =
+                {
+                    .x = 3,
+                    .y = 2,
+                },
+            [SNAKE_TAIL_RIGHT] =
+                {
+                    .x = 4,
+                    .y = 2,
+                },
+            [SNAKE_TAIL_LEFT] =
+                {
+                    .x = 3,
+                    .y = 3,
+                },
+            [SNAKE_BODY_45] =
+                {
+                    .x = 2,
+                    .y = 2,
+                },
+            [SNAKE_BODY_90] =
+                {
+                    .x = 2,
+                    .y = 1,
+                },
+            [SNAKE_BODY_135] =
+                {
+                    .x = 2,
+                    .y = 0,
+                },
+            [SNAKE_BODY_180] =
+                {
+                    .x = 1,
+                    .y = 0,
+                },
+            [SNAKE_BODY_225] =
+                {
+                    .x = 0,
+                    .y = 0,
+                },
+            [SNAKE_BODY_315] =
+                {
+                    .x = 0,
+                    .y = 1,
+                },
+        },
 };
 
 static const Vector2 DIRECTION_UP = (Vector2){0, -1};
@@ -202,23 +209,32 @@ static Rectangle rectangle_for_snake_body_part(const Snake *snake, const Vector2
 #define IS_TAIL(part) part == &snake->body.items[snake->body.count - 1]
 #define IS_HEAD(part) part == &snake->body.items[0]
 
+// changes to avoid bleeding
+//  + 0.5f
+// - 1.0f
+#define TO_RECTANGLE(atlas_piece_index)                                                                                \
+    (Rectangle){.x = snake_atlas.pieces[atlas_piece_index].x * snake_atlas.width + 0.5,                                \
+                .y = snake_atlas.pieces[atlas_piece_index].y * snake_atlas.height + 0.5,                               \
+                .width = snake_atlas.width - 1.0f,                                                                     \
+                .height = snake_atlas.height - 1.0f}
+
     if (IS_HEAD(segment))
     {
         if (Vector2Equals(snake->direction, DIRECTION_UP))
         {
-            return snake_head_up;
+            return TO_RECTANGLE(SNAKE_HEAD_UP);
         }
         if (Vector2Equals(snake->direction, DIRECTION_DOWN))
         {
-            return snake_head_down;
+            return TO_RECTANGLE(SNAKE_HEAD_DOWN);
         }
         if (Vector2Equals(snake->direction, DIRECTION_LEFT))
         {
-            return snake_head_left;
+            return TO_RECTANGLE(SNAKE_HEAD_LEFT);
         }
         if (Vector2Equals(snake->direction, DIRECTION_RIGHT))
         {
-            return snake_head_right;
+            return TO_RECTANGLE(SNAKE_HEAD_RIGHT);
         }
     }
 
@@ -231,17 +247,17 @@ static Rectangle rectangle_for_snake_body_part(const Snake *snake, const Vector2
 
         if (Vector2Equals(diff, DIRECTION_UP))
         {
-            return snake_tail_down;
+            return TO_RECTANGLE(SNAKE_TAIL_DOWN);
         }
         if (Vector2Equals(diff, DIRECTION_DOWN))
         {
-            return snake_tail_up;
+            return TO_RECTANGLE(SNAKE_TAIL_UP);
         }
         if (Vector2Equals(diff, DIRECTION_LEFT))
         {
-            return snake_tail_right;
+            return TO_RECTANGLE(SNAKE_TAIL_RIGHT);
         }
-        return snake_tail_left;
+        return TO_RECTANGLE(SNAKE_TAIL_LEFT);
     }
 
     const Vector2 *towards_head = segment - 1;
@@ -249,43 +265,46 @@ static Rectangle rectangle_for_snake_body_part(const Snake *snake, const Vector2
 
     if (segment->x == towards_head->x && segment->x == towards_tail->x)
     {
-        return snake_body_90;
+        return TO_RECTANGLE(SNAKE_BODY_90);
     }
 
     if (segment->y == towards_head->y && segment->y == towards_tail->y)
     {
-        return snake_body_180;
+        return TO_RECTANGLE(SNAKE_BODY_180);
     }
 
     Vector2 head_diff = Vector2Subtract(*segment, *towards_head);
     Vector2 tail_diff = Vector2Subtract(*towards_tail, *segment);
 
-#define head_to_tail(direction1, direction2)                                                                           \
+#define HEAD_TO_TAIL(direction1, direction2)                                                                           \
     (Vector2Equals(head_diff, direction1) && Vector2Equals(tail_diff, direction2))
 
-    if (head_to_tail(DIRECTION_RIGHT, DIRECTION_UP) || head_to_tail(DIRECTION_DOWN, DIRECTION_LEFT))
+    if (HEAD_TO_TAIL(DIRECTION_RIGHT, DIRECTION_UP) || HEAD_TO_TAIL(DIRECTION_DOWN, DIRECTION_LEFT))
     {
-        return snake_body_45;
+        return TO_RECTANGLE(SNAKE_BODY_45);
     }
 
-    if (head_to_tail(DIRECTION_RIGHT, DIRECTION_DOWN) || head_to_tail(DIRECTION_UP, DIRECTION_LEFT))
+    if (HEAD_TO_TAIL(DIRECTION_RIGHT, DIRECTION_DOWN) || HEAD_TO_TAIL(DIRECTION_UP, DIRECTION_LEFT))
     {
-        return snake_body_135;
+        return TO_RECTANGLE(SNAKE_BODY_135);
     }
 
-    if (head_to_tail(DIRECTION_DOWN, DIRECTION_RIGHT) || head_to_tail(DIRECTION_LEFT, DIRECTION_UP))
+    if (HEAD_TO_TAIL(DIRECTION_DOWN, DIRECTION_RIGHT) || HEAD_TO_TAIL(DIRECTION_LEFT, DIRECTION_UP))
     {
-        return snake_body_315;
+        return TO_RECTANGLE(SNAKE_BODY_315);
     }
 
-    if (head_to_tail(DIRECTION_UP, DIRECTION_RIGHT) || head_to_tail(DIRECTION_LEFT, DIRECTION_DOWN))
+    if (HEAD_TO_TAIL(DIRECTION_UP, DIRECTION_RIGHT) || HEAD_TO_TAIL(DIRECTION_LEFT, DIRECTION_DOWN))
     {
-        return snake_body_225;
+        return TO_RECTANGLE(SNAKE_BODY_225);
     }
 
     NOB_UNREACHABLE("rectangle_for_snake_body_part");
 
 #undef IS_TAIL
+#undef IS_HEAD
+#undef HEAD_TO_TAIL
+#undef TO_RECTANGLE
 }
 
 static void draw_snake(const Snake *snake, const Texture2D *snake_atlas, uint8_t diameter, Vector2 offset)
