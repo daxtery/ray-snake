@@ -101,7 +101,7 @@ typedef struct
     u_int8_t width;
     u_int8_t height;
     AtlasPiece pieces[];
-} Atlas;
+} AtlasDefinition;
 
 enum
 {
@@ -121,7 +121,7 @@ enum
     SNAKE_BODY_315,
 };
 
-static Atlas snake_atlas = {
+static AtlasDefinition snake_atlas_definition = {
     .height = 64,
     .width = 64,
     .pieces =
@@ -204,7 +204,8 @@ static const Vector2 DIRECTION_DOWN = (Vector2){0, 1};
 static const Vector2 DIRECTION_LEFT = (Vector2){-1, 0};
 static const Vector2 DIRECTION_RIGHT = (Vector2){1, 0};
 
-static Rectangle rectangle_for_snake_body_part(const Snake *snake, const Vector2 *segment)
+static Rectangle rectangle_for_snake_body_part(const Snake *snake, const AtlasDefinition *snake_atlas,
+                                               const Vector2 *segment)
 {
 #define IS_TAIL(part) part == &snake->body.items[snake->body.count - 1]
 #define IS_HEAD(part) part == &snake->body.items[0]
@@ -213,10 +214,10 @@ static Rectangle rectangle_for_snake_body_part(const Snake *snake, const Vector2
 //  + 0.5f
 // - 1.0f
 #define TO_RECTANGLE(atlas_piece_index)                                                                                \
-    (Rectangle){.x = snake_atlas.pieces[atlas_piece_index].x * snake_atlas.width + 0.5,                                \
-                .y = snake_atlas.pieces[atlas_piece_index].y * snake_atlas.height + 0.5,                               \
-                .width = snake_atlas.width - 1.0f,                                                                     \
-                .height = snake_atlas.height - 1.0f}
+    (Rectangle){.x = snake_atlas->pieces[atlas_piece_index].x * snake_atlas->width + 0.5f,                             \
+                .y = snake_atlas->pieces[atlas_piece_index].y * snake_atlas->height + 0.5f,                            \
+                .width = snake_atlas->width - 1.0f,                                                                    \
+                .height = snake_atlas->height - 1.0f}
 
     if (IS_HEAD(segment))
     {
@@ -307,13 +308,14 @@ static Rectangle rectangle_for_snake_body_part(const Snake *snake, const Vector2
 #undef TO_RECTANGLE
 }
 
-static void draw_snake(const Snake *snake, const Texture2D *snake_atlas, uint8_t diameter, Vector2 offset)
+static void draw_snake(const Snake *snake, const Texture2D *snake_atlas, const AtlasDefinition *snake_atlas_defitinion,
+                       uint8_t diameter, Vector2 offset)
 {
     nob_da_foreach(Vector2, segment, &snake->body)
     {
         Vector2 top_left_corner = Vector2Add(Vector2Scale(*segment, diameter), offset);
         Rectangle dest_rec = {top_left_corner.x, top_left_corner.y, diameter, diameter};
-        Rectangle source_rec = rectangle_for_snake_body_part(snake, segment);
+        Rectangle source_rec = rectangle_for_snake_body_part(snake, snake_atlas_defitinion, segment);
         DrawTexturePro(*snake_atlas, source_rec, dest_rec, Vector2Zero(), 0.0f, ORANGE);
     }
 }
@@ -572,7 +574,7 @@ int main(void)
 
         draw_borders(offset);
 
-        draw_snake(&snake, &snake_atlas, diameter, offset);
+        draw_snake(&snake, &snake_atlas, &snake_atlas_definition, diameter, offset);
 
         draw_food(&food, &food_animation_timing, &apple_texture, diameter, offset, GetFrameTime());
 
